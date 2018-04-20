@@ -8,8 +8,8 @@
 
 #import <Foundation/Foundation.h>
 
-@interface TestSingle : NSObject
+@interface TestSingle : NSObject <NSCopying, NSMutableCopying>
 
-+ (instancetype)instance;
++ (instancetype)shareSingle;
 
 @end

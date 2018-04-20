@@ -6,18 +6,32 @@
 //  Copyright © 2016年 李姝睿. All rights reserved.
 //
 
+
+
 #import "TestSingle.h"
 
 @implementation TestSingle
 
-+ (instancetype)instance {
+static TestSingle *_ins;
++ (instancetype)shareSingle {
+    
+    return [[self alloc] init];
+}
+
++ (instancetype)allocWithZone:(struct _NSZone *)zone {
     static dispatch_once_t onceToken;
-    static TestSingle *ins = nil;
     dispatch_once(&onceToken, ^{
-        NSLog(@"init the testSingle");
-        ins = [[TestSingle alloc] init];
+        _ins = [super allocWithZone:zone];
     });
-    return ins;
+    return _ins;
+}
+
+- (id)copyWithZone:(NSZone *)zone {
+    return _ins;
+}
+
+- (id)mutableCopyWithZone:(NSZone *)zone {
+    return _ins;
 }
 
 @end

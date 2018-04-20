@@ -217,4 +217,18 @@
     dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
     NSLog(@"---- end ----");
 }
+
+- (void)test {
+    // 两个方法的区别：封装任务的方法不同（block - 函数）
+//    dispatch_async(<#dispatch_queue_t  _Nonnull queue#>, <#^(void)block#>)
+    /*
+     * 第一个参数：队列
+     * 第二个参数：
+     * 第三个参数：要调用的函数名称
+     **/
+    dispatch_async_f(dispatch_queue_create(0, 0), NULL, task);
+}
+void task(void *param) {
+    NSLog(@"%s --- %@", __func__, [NSThread currentThread]);
+}
 @end

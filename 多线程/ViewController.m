@@ -15,7 +15,7 @@
 
 @interface ViewController ()
 
-@property (nonatomic, strong) NSOperationQueue *operQueue;
+@property (nonatomic, strong) NSOperationQueue *queue;
 @property (weak, nonatomic) IBOutlet UIImageView *imgView;
 
 @end
@@ -70,18 +70,21 @@ void *run(void *data) {
 }
 
 - (void)runThread1 {
-    NSLog(@"我在子线程执行-NSThread");
-    for (int i = 1; i <= 10; i ++) {
-        NSLog(@"%@ ----------- %d",[NSThread currentThread].name,i);
-        sleep(1);
-        if (i == 10) {
-            [self performSelectorOnMainThread:@selector(runMainThread) withObject:nil waitUntilDone:YES];
-        }
-    }
+    NSLog(@"DOWNLOAD ------- %@", [NSThread currentThread]);
+    CFTimeInterval start = CFAbsoluteTimeGetCurrent();
+    
+    NSURL *url = [NSURL URLWithString:@"https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1522321266313&di=ed9a6275326aa65211a500130c915d13&imgtype=0&src=http%3A%2F%2Fimg.zcool.cn%2Fcommunity%2F014fc4554236ee0000019ae9140050.jpg"];
+    NSData *imgData = [NSData dataWithContentsOfURL:url];
+    UIImage *img = [UIImage imageWithData:imgData];
+    [self performSelectorOnMainThread:@selector(showImage:) withObject:img waitUntilDone:NO];
+    
+    CFTimeInterval end = CFAbsoluteTimeGetCurrent();
+    NSLog(@"%f", end - start);
 }
 
-- (void)runMainThread {
-    NSLog(@"回到主线程");
+- (void)showImage:(UIImage *)img {
+    self.imgView.image = img;
+    NSLog(@"UI ------ %@", [NSThread currentThread]);
 }
 #pragma mark - GCD
 - (IBAction)GCDAction:(id)sender {
@@ -96,82 +99,13 @@ void *run(void *data) {
 //    [GCDTest barrier];
 //    [GCDTest apply];
     [GCDTest group2];
+//    [self GCDCommunicate];
 }
 #pragma mark - Single
 - (IBAction)singleAction:(id)sender {
-    TestSingle *single = [TestSingle instance];
+    TestSingle *single = [TestSingle shareSingle];
     NSLog(@"%@",single);
 }
-
-#pragma mark - Operation
-- (void)clickOperation {
-    NSLog(@"main thread");
-//    dispatch_async(dispatch_get_global_queue(0, 0), ^{
-//        NSInvocationOperation *invocationOper = [[NSInvocationOperation alloc] initWithTarget:self selector:@selector(invocationAction) object:nil];
-//        [invocationOper start];
-//        NSLog(@"end");
-//    });
-    
-//    NSBlockOperation *blockOper = [NSBlockOperation blockOperationWithBlock:^{
-//        for (int i = 0; i < 3; i ++) {
-//            NSLog(@"invocation %d",i);
-//            [NSThread sleepForTimeInterval:1];
-//        }
-//    }];
-    
-    if (! self.operQueue) {
-        self.operQueue = [[NSOperationQueue alloc] init];
-    }
-    [self.operQueue setMaxConcurrentOperationCount:2];
-//    [blockOper start];
-//    [self.operQueue addOperation:blockOper];
-    
-    CustomOperation *customOperA = [[CustomOperation alloc] initWithName:@"OperA"];
-    CustomOperation *customOperB = [[CustomOperation alloc] initWithName:@"OperB"];
-    CustomOperation *customOperC = [[CustomOperation alloc] initWithName:@"OperC"];
-    CustomOperation *customOperD = [[CustomOperation alloc] initWithName:@"OperD"];
-    
-    [customOperD addDependency:customOperA];
-    [customOperA addDependency:customOperC];
-    [customOperC addDependency:customOperB];
-    
-    [self.operQueue addOperation:customOperA];
-    [self.operQueue addOperation:customOperB];
-    [self.operQueue addOperation:customOperC];
-    [self.operQueue addOperation:customOperD];
-    
-    NSLog(@"end");
-}
-
-- (void)invocationAction {
-    for (int i = 0; i < 3; i ++) {
-        NSLog(@"invocation %d",i);
-        [NSThread sleepForTimeInterval:1];
-    }
-}
-
-- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    [NSThread detachNewThreadSelector:@selector(download) toTarget:self withObject:nil];
-}
-
-- (void)download {
-//    NSLog(@"DOWNLOAD ------- %@", [NSThread currentThread]);
-//    CFTimeInterval start = CFAbsoluteTimeGetCurrent();
-//
-//    NSURL *url = [NSURL URLWithString:@"https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1522321266313&di=ed9a6275326aa65211a500130c915d13&imgtype=0&src=http%3A%2F%2Fimg.zcool.cn%2Fcommunity%2F014fc4554236ee0000019ae9140050.jpg"];
-//    NSData *imgData = [NSData dataWithContentsOfURL:url];
-//    UIImage *img = [UIImage imageWithData:imgData];
-//
-//    [self performSelectorOnMainThread:@selector(showImage:) withObject:img waitUntilDone:NO];
-//
-//    CFTimeInterval end = CFAbsoluteTimeGetCurrent();
-//    NSLog(@"%f", end - start);
-    
-
-    [self GCDCommunicate];
-    
-}
-
 /**
  GCD线程间通信
  */
@@ -188,10 +122,195 @@ void *run(void *data) {
         });
     });
 }
+#pragma mark - NSOperation
+- (IBAction)NSOperationAction:(id)sender {
+//    [self blockOperation];
+//    [self invocationOperation];
+//    [self maxConcurrentOperationCount];
+//    [self addDependency];
+    [self operationCommunicate];
+}
 
-- (void)showImage:(UIImage *)img {
-    self.imgView.image = img;
-    NSLog(@"UI ------ %@", [NSThread currentThread]);
+- (void)maxConcurrentOperationCount {
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    // 设置最大并发数量（同一时间最多有多少个任务可以执行）
+    // maxConcurrentOperationCount > 1 并发队列
+    // maxConcurrentOperationCount == 1 串行队列
+    // maxConcurrentOperationCount == 0 不执行任务
+    // maxConcurrentOperationCount == -1 最大值，不受限制
+    queue.maxConcurrentOperationCount = 1;
+    NSBlockOperation *op1 = [NSBlockOperation blockOperationWithBlock:^{
+        NSLog(@"1 ------ %@", [NSThread currentThread]);
+    }];
+    NSBlockOperation *op2 = [NSBlockOperation blockOperationWithBlock:^{
+        NSLog(@"2 ------ %@", [NSThread currentThread]);
+    }];
+    NSBlockOperation *op3 = [NSBlockOperation blockOperationWithBlock:^{
+        NSLog(@"3 ------ %@", [NSThread currentThread]);
+    }];
+    NSBlockOperation *op4 = [NSBlockOperation blockOperationWithBlock:^{
+        NSLog(@"4 ------ %@", [NSThread currentThread]);
+    }];
+    NSBlockOperation *op5 = [NSBlockOperation blockOperationWithBlock:^{
+        NSLog(@"5 ------ %@", [NSThread currentThread]);
+    }];
+    [queue addOperation:op1];
+    [queue addOperation:op2];
+    [queue addOperation:op3];
+    [queue addOperation:op4];
+    [queue addOperation:op5];
+}
+
+- (void)invocationOperation {
+    NSInvocationOperation *op1 = [[NSInvocationOperation alloc] initWithTarget:self selector:@selector(download1) object:nil];
+    NSInvocationOperation *op2 = [[NSInvocationOperation alloc] initWithTarget:self selector:@selector(download2) object:nil];
+    NSInvocationOperation *op3 = [[NSInvocationOperation alloc] initWithTarget:self selector:@selector(download3) object:nil];
+    /*
+     * 主队列：[NSOperationQueue mainQueue]
+     * 非主队列：[[NSOperationQueue alloc] init] 同时具备并发和串行的功能
+     */
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [queue addOperation:op1];
+    [queue addOperation:op2];
+    [queue addOperation:op3];
+}
+
+- (void)blockOperation {
+    NSBlockOperation *op1 = [NSBlockOperation blockOperationWithBlock:^{
+        NSLog(@"1 ------ %@", [NSThread currentThread]);
+    }];
+    NSBlockOperation *op2 = [NSBlockOperation blockOperationWithBlock:^{
+        NSLog(@"2 ------ %@", [NSThread currentThread]);
+    }];
+    NSBlockOperation *op3 = [NSBlockOperation blockOperationWithBlock:^{
+        NSLog(@"3 ------ %@", [NSThread currentThread]);
+    }];
+    // 追加任务 如果一个操作中的任务数量大于1，那么会开子线程并发执行任务，不一定是子线程，有可能是主线程
+    [op3 addExecutionBlock:^{
+        NSLog(@"4 ------ %@", [NSThread currentThread]);
+    }];
+    [op3 addExecutionBlock:^{
+        NSLog(@"5 ------ %@", [NSThread currentThread]);
+    }];
+    [op3 addExecutionBlock:^{
+        NSLog(@"6 ------ %@", [NSThread currentThread]);
+    }];
+    
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [queue addOperation:op1];
+    [queue addOperation:op2];
+    [queue addOperation:op3];
+    // 简便方法
+    [queue addOperationWithBlock:^{
+        NSLog(@"7 ------ %@", [NSThread currentThread]);
+    }];
+}
+
+- (void)download1 {
+    NSLog(@"%s ------ %@", __func__, [NSThread currentThread]);
+}
+
+- (void)download2 {
+    NSLog(@"%s ------ %@", __func__, [NSThread currentThread]);
+}
+
+- (void)download3 {
+    NSLog(@"%s ------ %@", __func__, [NSThread currentThread]);
+}
+
+- (void)addDependency {
+    NSBlockOperation *op1 = [NSBlockOperation blockOperationWithBlock:^{
+        NSLog(@"1 ------ %@", [NSThread currentThread]);
+    }];
+    NSBlockOperation *op2 = [NSBlockOperation blockOperationWithBlock:^{
+        NSLog(@"2 ------ %@", [NSThread currentThread]);
+    }];
+    NSBlockOperation *op3 = [NSBlockOperation blockOperationWithBlock:^{
+        NSLog(@"3 ------ %@", [NSThread currentThread]);
+    }];
+    NSBlockOperation *op4 = [NSBlockOperation blockOperationWithBlock:^{
+        NSLog(@"4 ------ %@", [NSThread currentThread]);
+    }];
+    // 操作监听
+    op3.completionBlock = ^{
+        NSLog(@"**** 好了 ********%@", [NSThread currentThread]);
+    };
+    // 添加依赖
+    [op1 addDependency:op4];
+    [op4 addDependency:op3];
+    [op3 addDependency:op2];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [queue addOperation:op1];
+    [queue addOperation:op2];
+    [queue addOperation:op3];
+    [queue addOperation:op4];
+}
+
+- (IBAction)startAction:(id)sender {
+    self.queue = [[NSOperationQueue alloc] init];
+    self.queue.maxConcurrentOperationCount = 1;
+    NSBlockOperation *op1 = [NSBlockOperation blockOperationWithBlock:^{
+        for (NSInteger i = 0; i < 1000; i ++) {
+            NSLog(@"1 --- %zd --- %@", i, [NSThread currentThread]);
+        }
+    }];
+    NSBlockOperation *op2 = [NSBlockOperation blockOperationWithBlock:^{
+        for (NSInteger i = 0; i < 1000; i ++) {
+            NSLog(@"2 --- %zd --- %@", i, [NSThread currentThread]);
+        }
+    }];
+    NSBlockOperation *op3 = [NSBlockOperation blockOperationWithBlock:^{
+        for (NSInteger i = 0; i < 1000; i ++) {
+            NSLog(@"3 --- %zd --- %@", i, [NSThread currentThread]);
+        }
+    }];
+    NSBlockOperation *op4 = [NSBlockOperation blockOperationWithBlock:^{
+        NSLog(@"4 ------ %@", [NSThread currentThread]);
+    }];
+    NSBlockOperation *op5 = [NSBlockOperation blockOperationWithBlock:^{
+        for (NSInteger i = 0; i < 1000; i ++) {
+            NSLog(@"5 --- %zd --- %@", i, [NSThread currentThread]);
+        }
+    }];
+    NSBlockOperation *op6 = [NSBlockOperation blockOperationWithBlock:^{
+        NSLog(@"6 ------ %@", [NSThread currentThread]);
+    }];
+    NSBlockOperation *op7 = [NSBlockOperation blockOperationWithBlock:^{
+        NSLog(@"7 ------ %@", [NSThread currentThread]);
+    }];
+    [self.queue addOperation:op1];
+    [self.queue addOperation:op2];
+    [self.queue addOperation:op3];
+    [self.queue addOperation:op4];
+    [self.queue addOperation:op5];
+    [self.queue addOperation:op6];
+    [self.queue addOperation:op7];
+}
+- (IBAction)suspendAction:(id)sender {
+    [self.queue setSuspended:YES];
+}
+- (IBAction)goOnAction:(id)sender {
+    // 不能暂停当前正在执行的任务
+    [self.queue setSuspended:NO];
+}
+- (IBAction)cancelAction:(id)sender {
+    [self.queue cancelAllOperations];
+}
+
+- (void)operationCommunicate {
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    NSBlockOperation *download = [NSBlockOperation blockOperationWithBlock:^{
+        NSLog(@"-------%@",[NSThread currentThread]);
+        NSURL *url = [NSURL URLWithString:@"http://pic39.nipic.com/20140320/18201281_214432763000_2.jpg"];
+        NSData *imgData = [NSData dataWithContentsOfURL:url];
+        UIImage *img = [UIImage imageWithData:imgData];
+        
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+            self.imgView.image = img;
+            NSLog(@"-------%@",[NSThread currentThread]);
+        }];
+    }];
+    [queue addOperation:download];
 }
 
 - (void)didReceiveMemoryWarning {
