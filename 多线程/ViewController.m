@@ -249,42 +249,9 @@ void *run(void *data) {
 - (IBAction)startAction:(id)sender {
     self.queue = [[NSOperationQueue alloc] init];
     self.queue.maxConcurrentOperationCount = 1;
-    NSBlockOperation *op1 = [NSBlockOperation blockOperationWithBlock:^{
-        for (NSInteger i = 0; i < 1000; i ++) {
-            NSLog(@"1 --- %zd --- %@", i, [NSThread currentThread]);
-        }
-    }];
-    NSBlockOperation *op2 = [NSBlockOperation blockOperationWithBlock:^{
-        for (NSInteger i = 0; i < 1000; i ++) {
-            NSLog(@"2 --- %zd --- %@", i, [NSThread currentThread]);
-        }
-    }];
-    NSBlockOperation *op3 = [NSBlockOperation blockOperationWithBlock:^{
-        for (NSInteger i = 0; i < 1000; i ++) {
-            NSLog(@"3 --- %zd --- %@", i, [NSThread currentThread]);
-        }
-    }];
-    NSBlockOperation *op4 = [NSBlockOperation blockOperationWithBlock:^{
-        NSLog(@"4 ------ %@", [NSThread currentThread]);
-    }];
-    NSBlockOperation *op5 = [NSBlockOperation blockOperationWithBlock:^{
-        for (NSInteger i = 0; i < 1000; i ++) {
-            NSLog(@"5 --- %zd --- %@", i, [NSThread currentThread]);
-        }
-    }];
-    NSBlockOperation *op6 = [NSBlockOperation blockOperationWithBlock:^{
-        NSLog(@"6 ------ %@", [NSThread currentThread]);
-    }];
-    NSBlockOperation *op7 = [NSBlockOperation blockOperationWithBlock:^{
-        NSLog(@"7 ------ %@", [NSThread currentThread]);
-    }];
+    
+    CustomOperation *op1 = [[CustomOperation alloc] init];
     [self.queue addOperation:op1];
-    [self.queue addOperation:op2];
-    [self.queue addOperation:op3];
-    [self.queue addOperation:op4];
-    [self.queue addOperation:op5];
-    [self.queue addOperation:op6];
-    [self.queue addOperation:op7];
 }
 - (IBAction)suspendAction:(id)sender {
     [self.queue setSuspended:YES];

@@ -24,22 +24,22 @@
 }
 // 告知要执行的任务是什么 （有利于代码隐蔽，有利于代码复用）
 - (void)main {
-//    for (int i = 0; i < 3; i ++) {
-//        NSLog(@"%@ %d",self.operName, i);
-//        [NSThread sleepForTimeInterval:1];
-//    }
-
-    dispatch_async(dispatch_get_global_queue(0, 0), ^{
-        [NSThread sleepForTimeInterval:1];
-        if (self.cancelled) {
-            return ;
-        }
-        NSLog(@"%@",self.operName);
-        self.over = YES;
-    });
-    while (! self.over && ! self.cancelled) {
-        [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
-
+    for (NSInteger i = 0; i < 3000; i ++) {
+        NSLog(@"download1 ---- %zd ---- %@", i, [NSThread currentThread]);
+    }
+    if (self.cancelled) {
+        return;
+    }
+    NSLog(@"+++++++++++++++++++++++++");
+    for (NSInteger i = 0; i < 1000; i ++) {
+        NSLog(@"download2 ---- %zd ---- %@", i, [NSThread currentThread]);
+    }
+    if (self.cancelled) {
+        return;
+    }
+    NSLog(@"+++++++++++++++++++++++++");
+    for (NSInteger i = 0; i < 1000; i ++) {
+        NSLog(@"download3 ---- %zd ---- %@", i, [NSThread currentThread]);
     }
 }
 
