@@ -190,7 +190,7 @@
         NSLog(@"--3-------%@", [NSThread currentThread]);
     });
     // 当队列组中所有任务都执行完毕之后会进入到下面的方法 内部本身是异步执行的
-    dispatch_group_notify(group, queue, ^{
+    dispatch_group_notify(group, dispatch_get_main_queue(), ^{
         NSLog(@"----- dispatch_group_notify ----");
     });
 }
