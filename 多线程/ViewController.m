@@ -17,7 +17,7 @@
 
 @property (nonatomic, strong) NSOperationQueue *queue;
 @property (weak, nonatomic) IBOutlet UIImageView *imgView;
-
+@property (nonatomic, strong) dispatch_source_t timer;
 @end
 
 @implementation ViewController
@@ -283,6 +283,58 @@ void *run(void *data) {
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
+}
+#pragma mark - RUNLOOP
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+//    [self timer1];
+//    [self timer2];
+//    [NSThread detachNewThreadSelector:@selector(timer2) toTarget:self withObject:nil];
+    [self GCDTimer];
+}
+
+- (void)timer1 {
+    // 创建定时器
+    NSTimer *timer = [NSTimer timerWithTimeInterval:2.f target:self selector:@selector(run) userInfo:nil repeats:YES];
+    // 添加定时器到runLoop中
+    // UITrackingRunLoopMode 界面追踪模式
+    // NSRunLoopCommonModes = UITrackingRunLoopMode + NSDefaultRunLoopMode  占用，标签，凡是添加到NSRunLoopCommonModes中的事件都会被同时添加到打上common标签的运行模式上
+    [[NSRunLoop currentRunLoop] addTimer:timer forMode:NSRunLoopCommonModes];
+}
+
+- (void)timer2 {
+    NSRunLoop *currentRunLoop = [NSRunLoop currentRunLoop];
+    // 该方法内部自动添加到runloop中，并且设置运行模式为默认
+    [NSTimer scheduledTimerWithTimeInterval:2.f target:self selector:@selector(run) userInfo:nil repeats:YES];
+    // 开启runLoop
+    [currentRunLoop run];
+}
+
+- (void)run {
+    NSLog(@"run ------ %@ ---- %@", [NSThread currentThread], [NSRunLoop currentRunLoop].currentMode);
+}
+
+- (void)GCDTimer { // 不受runloop影响
+    // 1.创建GCD中的定时器
+    /* 第一个参数：source的类型 DISPATCH_SOURCE_TYPE_TIMER 表示定时器
+     * 第二个参数：描述信息，线程ID
+     * 第三个参数：更详细的描述信息
+     * 第四个参数：队列，决定GCD定时器中的任务在哪个线程中执行
+     */
+    dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_global_queue(0, 0));
+    // 2.设置定时器（起始时间|间隔时间|精准度）
+    /* 第一个参数：定时器对象
+     * 第二个参数：起始时间，DISPATCH_TIME_NOW 从现在开始
+     * 第三个参数：间隔时间
+     * 第四个参数：精准度 绝对精准 0
+     */
+    dispatch_source_set_timer(timer, DISPATCH_TIME_NOW, 2.f * NSEC_PER_SEC, 0 * NSEC_PER_SEC);
+    // 3.设置定时器执行的任务
+    dispatch_source_set_event_handler(timer, ^{
+        NSLog(@"GCD --- %@", [NSThread currentThread]);
+    });
+    // 4.启动执行
+    dispatch_resume(timer);
+    self.timer = timer;
 }
 
 
